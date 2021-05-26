@@ -18,3 +18,12 @@ end
     @test convert(Cint, int(2000)) == 2000
     @test convert(float, int(2000)) == 2000
 end
+
+@testset "CFunction" begin
+    @C function foo(a::int, b::float)::int
+        return a ? a + b : b
+    end
+    @test foo(2, 2) === int(4)
+    @test foo(3, 2) === int(5)
+    @test foo(0, 2) === int(2)
+end

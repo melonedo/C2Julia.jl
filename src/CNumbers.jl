@@ -59,6 +59,10 @@ Base.convert(::Type{CNumber{T}}, x::CNumber{<:Integer}) where {T <: Integer} = C
 Base.convert(::Type{CNumber{T}}, x::CNumber) where {T <: AbstractFloat} = CNumber{T}(convert(T, value(x)))
 # Convert from floating point number to integer by truncating
 Base.convert(::Type{CNumber{T}}, x::CNumber{<:AbstractFloat}) where {T <: Integer} = CNumber{T}(trunc(value(x)))
+# Convert to bool is !iszero
+Base.convert(::Type{Bool}, x::CNumber) = !iszero(value(x))
+Base.convert(::Type{bool}, x::CNumber) = bool(Base.convert(Bool, x))
+
 
 "Integers with rank smaller than int are promoted to int"
 promote_integer(::Type{T}) where T = rank(T) ≥ rank(Cint) ? T : Cint
@@ -96,6 +100,20 @@ end
 
 function Base.promote_rule(::Type{CNumber{T1}}, ::Type{CNumber{T2}}) where {T1,T2}
     return CNumber{c_promote(T1, T2)}
+end
+
+# Arithmetic
+
+for op in [:+, :-, :*, :/, :%, :&, :|, :⊻, :<<, :>>, :(==), :!=, :<, :>, :<=, :(>=)] # XOR is ⊻ in julia
+    @eval function Base.$op(a::CNumber{T}, b::CNumber{T}) where T
+        CNumber{T}($op(value(a), value(b)))
+    end
+end
+
+for op in [:+, :-, :~]
+    @eval function Base.$op(a::CNumber{T}) where T
+        CNumber{T}($op(value(a)))
+    end
 end
 
 # end
