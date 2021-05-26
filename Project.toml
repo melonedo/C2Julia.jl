@@ -1,0 +1,7 @@
+name = "C2Julia"
+uuid = "fa830b30-496a-4b68-bb4b-c80d09acfad5"
+authors = ["melonedo <44501064+melonedo@users.noreply.github.com>"]
+version = "0.1.0"
+
+[deps]
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
