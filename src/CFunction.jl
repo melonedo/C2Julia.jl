@@ -1,4 +1,3 @@
-# module CFunction
 using MacroTools:splitarg, splitdef, combinedef
 
 """
@@ -26,31 +25,34 @@ end
 macro C(func::Expr)
     def = splitdef(func)
     args = splitarg.(def[:args])
+    # no-op if func has no argument
+    isempty(args) && return esc(func)
 
     argnames = [arg[1] for arg in args]
-    funcname = def[:name]
+    funcname = esc(def[:name])
     # TODO: vararg default argument promotion
     converters = map(args) do arg
         quote
-            $(arg[1]) = convert($(arg[2]), $(arg[1]))
+            $(arg[1]) = Base.convert($(arg[2]), $(arg[1]))
         end
     end
     apply = Expr(:call, funcname, argnames...)
+    def[:name] = funcname
     def[:body] = Expr(:block, converters..., apply)
     def[:args] = argnames
     convert_func = combinedef(def)
-    original_func = insert_bool_conversion(func)
+    # original_func = insert_bool_conversion(func)
+    original_func = func
 
     return quote
         $(esc(original_func))
-        $(esc(convert_func))
+        $convert_func
     end
 end
 
-
 function insert_bool_conversion(e::Expr)
-    if e.head ∈ [:if, :elseif, :&&, :||]
-        Expr(e.head, :(convert(Bool, $(e.args[1]))), insert_bool_conversion.(e.args[2:end])...)
+    if e.head ∈ [:if, :elseif, :&&, :||, :while] # translated code does not have `for`
+        Expr(e.head, :(Base.convert(Bool, $(e.args[1]))), insert_bool_conversion.(e.args[2:end])...)
     else
         Expr(e.head, insert_bool_conversion.(e.args)...)
     end
@@ -58,4 +60,32 @@ end
 
 insert_bool_conversion(e) = e
 
-# end
+"""
+    macro bool(e)
+Convert `e` to `Base.Bool`. Use macro to save a keyword.
+"""
+macro bool(e)
+    :(Base.convert(Bool, $(esc(e))))
+end
+"""
+@cfor init cond update begin
+    block
+end
+To preserve readability, this is direct translation of
+```c
+for (init; cond; update) {
+    block
+}
+```
+"""
+macro cfor(init, cond, update, block)
+	quote
+		let # Create new local scope
+			$(esc(init))
+			while $(esc(cond))
+				$(esc(block))
+				$(esc(update))
+			end
+		end
+	end
+end

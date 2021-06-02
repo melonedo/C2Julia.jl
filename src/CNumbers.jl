@@ -6,7 +6,6 @@ Provides C-style numbers, whose conversion rule is different from julia's:
 * Floating-point to integer conversion is plain `trunc`
 Also it exports C-style lowercase type names like `float`, `int`, or `unsigned_int`.
 """
-# module CNumbers
 
 """
     struct CNumber{T <: Number} <: Number
@@ -52,11 +51,11 @@ for (ind, (name, type)) in [
 end
 
 # Convert to normal julia types (outer constructor is not defined)
-Base.convert(::Type{T}, x::CNumber) where {T <: Number} = convert(T, value(x))
+Base.convert(::Type{T}, x::CNumber) where {T <: Number} = Base.convert(T, value(x))
 # Convert between integer types by truncating
 Base.convert(::Type{CNumber{T}}, x::CNumber{<:Integer}) where {T <: Integer} = CNumber{T}(value(x) % T)
 # Convert to floating point number by direct julian conversion
-Base.convert(::Type{CNumber{T}}, x::CNumber) where {T <: AbstractFloat} = CNumber{T}(convert(T, value(x)))
+Base.convert(::Type{CNumber{T}}, x::CNumber) where {T <: AbstractFloat} = CNumber{T}(Base.convert(T, value(x)))
 # Convert from floating point number to integer by truncating
 Base.convert(::Type{CNumber{T}}, x::CNumber{<:AbstractFloat}) where {T <: Integer} = CNumber{T}(trunc(value(x)))
 # Convert to bool is !iszero
@@ -74,11 +73,11 @@ function c_promote(::Type{T1}, ::Type{T2}) where {T1 <: AbstractFloat,T2}
     return promote_type(T1, T2)
 end
 
-function c_promote(::Type{T1}, ::Type{T2}) where {T1,T2}
-    if T1 <: AbstractFloat || T2 <: AbstractFloat
-        return promote_type(T1, T2)
-    end
+function c_promote(::Type{T1}, ::Type{T2}) where {T1,T2 <: AbstractFloat}
+    return promote_type(T1, T2)
+end
 
+function c_promote(::Type{T1}, ::Type{T2}) where {T1,T2}
     T3, T4 = promote_integer(T1), promote_integer(T2)
     if !(signedness(T3) ⊻ signedness(T4))
         return rank(T3) > rank(T4) ? T3 : T4
@@ -102,9 +101,14 @@ function Base.promote_rule(::Type{CNumber{T1}}, ::Type{CNumber{T2}}) where {T1,T
     return CNumber{c_promote(T1, T2)}
 end
 
+# Always favor CNumber over julian nubers
+function Base.promote_rule(::Type{CNumber{T1}}, ::Type{T2}) where {T1, T2}
+    Base.promote_rule(CNumber{T1}, CNumber{T2})
+end
+
 # Arithmetic
 
-for op in [:+, :-, :*, :/, :%, :&, :|, :⊻, :<<, :>>, :(==), :!=, :<, :>, :<=, :(>=)] # XOR is ⊻ in julia
+for op in [:+, :-, :*, :/, :%, :&, :|, :⊻, :<<, :>>] # XOR is ⊻ in julia
     @eval function Base.$op(a::CNumber{T}, b::CNumber{T}) where T
         CNumber{T}($op(value(a), value(b)))
     end
@@ -116,4 +120,29 @@ for op in [:+, :-, :~]
     end
 end
 
-# end
+# Return Bool
+for op in [:(==), :!=, :<, :>, :<=, :(>=)]
+    @eval function Base.$op(a::CNumber{T1}, b::CNumber{T2}) where {T1,T2}
+        a, b = Base.promote(a, b)
+        Base.$op(value(a), value(b))
+    end
+end
+
+"@post_inc i is equivalent to i++"
+macro post_inc(i)
+	quote
+		local v = $(esc(i))
+		$(esc(i)) += 1
+		v
+	end
+end
+
+"@post_dec i is equivalent to i--"
+macro post_dec(i)
+	quote
+		local v = $(esc(i))
+		$(esc(i)) -= 1
+		v
+	end
+end
+1 < 2 
