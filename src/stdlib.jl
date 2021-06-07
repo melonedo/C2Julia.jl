@@ -1,14 +1,17 @@
 module stdlib
-using Base: RefValue
-using C2Julia: CNumber
-export printf, scanf, sprintf, snprintf, sscanf
+using C2Julia
+using C2Julia: CNumber, value, ArrayPointer
+export printf, scanf, sprintf, snprintf, sscanf, putchar
 
 to_c_type(x) = x
-to_c_type(::Type{CNumber{T}}) where T = T
+to_c_type(::Type{CNumber{T}}) where T = T # Only needed for exactly CNumber types, nested types will work just fine
 # to_c_type(::Type{Pointer{T}}) where T = Ref{T}
 to_c_type(::Type{<:AbstractString}) = Cstring
 to_c_type(::Type{Vector{T}}) where T = Ref{T}
-to_c_type(::Type{RefValue{T}}) where T = Ref{T} # Ref{Int} is actually RefValue{Int}
+to_c_type(::Type{<:Ref{T}}) where T = Ref{T} # Ref{Int} is actually RefValue{Int}
+to_c_type(::Type{ArrayPointer{T}}) where T = Ref{T}
+
+# Base.cconvert(::Type{Ref{T}}, x::Ref{CNumber{T}}) where T = Base.cconvert(Ref{Cvoid}, x)
 
 @generated function ccall_vararg(::Val{name}, fix_args, var_args, ::Type{rettype}) where {name,rettype}
     counter = Iterators.countfrom(1)
@@ -29,5 +32,7 @@ sprintf(buf, format, args...) = ccall_vararg(Val(:sprintf), (buf, format), args,
 sscanf(buf, format, args...) = ccall_vararg(Val(:sscanf), (buf, format), args, Cint)
 # C99, but julia source is only C89
 # snprintf(buf, length, format, args...) = ccall_vararg(Val(:snprintf), (buf, length, format), args, Cint)
+
+@C putchar(c::int) = print(Char(value(c)))
 
 end

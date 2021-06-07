@@ -45,7 +45,7 @@ end
 const Pointer{T} = Union{FieldRef{T}, ArrayPointer{T}}
 Base.convert(::Type{Pointer{T}}, m::MallocWrapper) where T = materialize_malloc(T, m)
 
-function Base.unsafe_convert(::Type{Ref{T}}, p::ArrayPointer{T}) where T
+function Base.cconvert(::Type{Ref{T}}, p::ArrayPointer{T}) where T
     pointer(getarray(p), getoffset(p))
 end
 

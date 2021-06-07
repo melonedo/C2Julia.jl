@@ -13,6 +13,7 @@ export @pointer, Pointer, malloc, free
 # Export Base symbols
 export +, -, *, /, %, &, |, ⊻, <<, >>, ~, !
 export <, >, <=, >=, ==, !=
+export sizeof
 
 include("stdlib.jl")
 

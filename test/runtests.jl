@@ -40,11 +40,13 @@ end
 @testset "@pointer" begin
     s = S1(2, 3)
     @test @pointer(s.a)[] == 2
-    a::Pointer{int} = C2Julia.malloc(sizeof(int) * 2)
+    a::Pointer{int} = C2Julia.malloc(sizeof(int) * 10)
     a[] = 1
     a[1] = 2
     @test @pointer(a[0])[] == 1
     @test @pointer(a[1])[] == 2
+    sscanf("1234", "%d", @pointer(a[1]))
+    @test a[1] == 1234
 end
 
 @testset "FieldRef" begin
@@ -87,6 +89,9 @@ end
 
 @testset "scanf" begin
     x = Ref{Cint}()
+    sscanf("1234", "%d", x)
+    @test x[] == 1234
+    x = Ref{int}()
     sscanf("1234", "%d", x)
     @test x[] == 1234
     x = Ref{Cfloat}()
