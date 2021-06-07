@@ -11,6 +11,7 @@ include("CPointer.jl")
 export @pointer, Pointer, malloc, free
 
 # Export Base symbols
-export +, -, *, /, <, >, <=, >=, ==
+export +, -, *, /, %, &, |, ⊻, <<, >>, ~, !
+export <, >, <=, >=, ==, !=
 
 end # module

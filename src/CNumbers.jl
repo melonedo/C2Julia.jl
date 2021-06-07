@@ -122,10 +122,14 @@ end
 
 # Return Bool
 for op in [:(==), :!=, :<, :>, :<=, :(>=)]
-    @eval function Base.$op(a::CNumber{T1}, b::CNumber{T2}) where {T1,T2}
+    @eval function Base.$op(a::CNumber, b::CNumber)
         a, b = Base.promote(a, b)
         Base.$op(value(a), value(b))
     end
+end
+
+function Base.:!(a::CNumber)
+    iszero(a)
 end
 
 "@post_inc i is equivalent to i++"
@@ -145,4 +149,3 @@ macro post_dec(i)
 		v
 	end
 end
-1 < 2 
