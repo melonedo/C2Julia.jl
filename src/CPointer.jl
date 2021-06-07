@@ -45,11 +45,22 @@ end
 const Pointer{T} = Union{FieldRef{T}, ArrayPointer{T}}
 Base.convert(::Type{Pointer{T}}, m::MallocWrapper) where T = materialize_malloc(T, m)
 
+function Base.unsafe_convert(::Type{Ref{T}}, p::ArrayPointer{T}) where T
+    pointer(getarray(p), getoffset(p))
+end
+
+function Base.unsafe_convert(::Type{Ref{T}}, p::FieldRef{T, field, ObjType}) where {T, field, ObjType}
+    pointer_from_objref(p.obj) + fieldoffset(ObjType, field)
+end
+
 # Maybe this could rule them all?
-# struct UnsafePointer{T}
-#     obj::Any # GC reference
+# struct GCPointer{T}
 #     ptr::Ptr{T}
+#     obj::Any # GC reference
+#     GCPointer{T}(p::FieldRef{T, Val{field}}) where {T, field} = new(pointer_from_objref(p.obj) + fieldoffset(T, field), p.obj)
+#     GCPointer{T}(p::ArrayPointer{T}) where T = new(pointer(getarray(p), getoffset(p)), getarray(p))
 # end
+# Base.unsafe_convert(::Type{Ptr}, p::GCPointer) = p.ptr
 
 "Convert wrapper into a pointer."
 function materialize_malloc(::Type{T}, m::MallocWrapper) where T

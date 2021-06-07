@@ -66,9 +66,10 @@ end
     @test x == orig - 1
 end
 
+to_string(buf) = buf |> pointer |> unsafe_string
+
 @testset "printf" begin
     buf = Vector{UInt8}(undef, 128)
-    to_string(buf) = buf |> pointer |> unsafe_string
     hello = "hello, world!"
     sprintf(buf, hello)
     @test to_string(buf) == hello
@@ -82,4 +83,19 @@ end
     @test parse(Float32, to_string(buf)) == 123.
     sprintf(buf, "%d", int(123))
     @test parse(Int, to_string(buf)) == 123
+end
+
+@testset "scanf" begin
+    x = Ref{Cint}()
+    sscanf("1234", "%d", x)
+    @test x[] == 1234
+    x = Ref{Cfloat}()
+    sscanf("1234", "%f", x)
+    @test x[] == 1234
+    x = Ref{Cdouble}()
+    sscanf("1234", "%lf", x)
+    @test x[] == 1234
+    buf = Vector{UInt8}(undef, 128)
+    sscanf("\n1234", "%s", buf)
+    @test to_string(buf) == "1234"
 end
