@@ -14,4 +14,6 @@ export @pointer, Pointer, malloc, free
 export +, -, *, /, %, &, |, ⊻, <<, >>, ~, !
 export <, >, <=, >=, ==, !=
 
+include("stdlib.jl")
+
 end # module

@@ -2,6 +2,7 @@ using Base
 using Test
 using C2Julia
 using C2Julia:value
+using C2Julia.stdlib
 const float = C2Julia.float
 
 @testset "CNumber type promotion" begin
@@ -63,4 +64,22 @@ end
     y::int = @post_dec x
     @test y == orig
     @test x == orig - 1
+end
+
+@testset "printf" begin
+    buf = Vector{UInt8}(undef, 128)
+    to_string(buf) = buf |> pointer |> unsafe_string
+    hello = "hello, world!"
+    sprintf(buf, hello)
+    @test to_string(buf) == hello
+    sprintf(buf, "%s", hello)
+    @test to_string(buf) == hello
+    sprintf(buf, "%f", 123.)
+    @test parse(Float32, to_string(buf)) == 123.
+    sprintf(buf, "%d", 123)
+    @test parse(Int, to_string(buf)) == 123
+    sprintf(buf, "%f", double(123.))
+    @test parse(Float32, to_string(buf)) == 123.
+    sprintf(buf, "%d", int(123))
+    @test parse(Int, to_string(buf)) == 123
 end
